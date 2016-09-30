@@ -101,7 +101,7 @@ object Main {
 		)(spark.sqlContext)
 
     // Create the train and test sets.
-    val Array(train, test) = preprocessedData.randomSplit(Array(0.7, 0.3))
+    val Array(train, test) = preprocessedData.randomSplitSync(Array(0.7, 0.3))
 
     // Define the columns that the model will use.
 		val labelCol = "imdb_score"
@@ -138,8 +138,8 @@ object Main {
 					.setEstimatorParamMaps(paramGrid)
 					.setNumFolds(3)
 				
-				val lrCvModel = lrCv.fit(train)
-				val lrPredictions = lrCvModel.transform(test)
+				val lrCvModel = lrCv.fitSync(train)
+				val lrPredictions = lrCvModel.transformSync(test)
 				
         /*
 				if (featureVectorNames.isDefined)
@@ -181,7 +181,7 @@ object Main {
 				),
 				scaler = Some(true, true)
 		)(spark.sqlContext)
-		val Array(train2, test2) = preprocessedData2.randomSplit(Array(0.7, 0.3))
+		val Array(train2, test2) = preprocessedData2.randomSplitSync(Array(0.7, 0.3))
 
 		val lrPredictions2 = makeLrModel(train2, test2, Some(featureVectorNames2))
 		println("Evaluating " + makeEvaluator().evaluate(lrPredictions2))
@@ -207,7 +207,7 @@ object Main {
 				),
 				scaler = Some(true, true)
 		)(spark.sqlContext)
-		val Array(train3, test3) = preprocessedData3.randomSplit(Array(0.7, 0.3))
+		val Array(train3, test3) = preprocessedData3.randomSplitSync(Array(0.7, 0.3))
 
 		val lrPredictions3 = makeLrModel(train3, test3, Some(featureVectorNames3))
 		println("Evaluating " + makeEvaluator().evaluate(lrPredictions3))

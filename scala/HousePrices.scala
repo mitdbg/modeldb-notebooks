@@ -19,13 +19,13 @@ import org.apache.spark.ml.regression.RandomForestRegressor
 
 object Main {
   def run(pathToData: String): Unit = {
-		ModelDbSyncer.setSyncer(
-			new ModelDbSyncer(projectConfig = NewProject(
+    ModelDbSyncer.setSyncer(
+      new ModelDbSyncer(projectConfig = NewProject(
         "House Prices",
-				"hsubrama@mit.edu",
-				"Attempt to predict home prices."
-			))
-		)
+        "hsubrama@mit.edu",
+        "Attempt to predict home prices."
+      ))
+    )
 
     // Read the data.
     val dfOrig = spark
@@ -58,13 +58,13 @@ object Main {
     // Print the schema.
     df.schema.foreach(println)
 
-		// Let's categorize the columns:
-		val uselessCols = Set("Id")
-		val leakCols = Set("MoSold", "YrSold", "SaleType", "SaleCondition")
-		val labelCol = "label"
-		val predictionCol = "prediction"
-		val featuresCol = "features"
-		val categoricalCols = Set("MSSubClass", "MSZoning", "Street", "Alley", 
+    // Let's categorize the columns:
+    val uselessCols = Set("Id")
+    val leakCols = Set("MoSold", "YrSold", "SaleType", "SaleCondition")
+    val labelCol = "label"
+    val predictionCol = "prediction"
+    val featuresCol = "features"
+    val categoricalCols = Set("MSSubClass", "MSZoning", "Street", "Alley", 
       "LotShape", "LandContour", "Utilities", "LotConfig", "LandSlope", 
       "Neighborhood", "Condition1", "Condition2", "BldgType", "HouseStyle", 
       "OverallQual", "OverallCond", "RoofStyle", "RoofMatl", "Exterior1st", 
@@ -73,7 +73,7 @@ object Main {
       "Heating", "HeatingQC", "CentralAir", "Electrical", "KitchenQual", 
       "Functional", "FireplaceQu", "GarageType", "GarageFinish", "GarageQual", 
       "GarageCond", "PavedDrive", "PoolQC", "Fence", "MiscFeature")
-		val scaledCols = Set("LotFrontage", "LotArea", "YearBuilt", "YearRemodAdd", 
+    val scaledCols = Set("LotFrontage", "LotArea", "YearBuilt", "YearRemodAdd", 
       "MasVnrArea", "BsmtFinSF1", "BsmtFinSF2", "BsmtUnfSF", "TotalBsmtSF", 
       "1stFlrSF", "2ndFlrSF", "LowQualFinSF", "GrLivArea", "BsmtFullBath", 
       "BsmtHalfBath", "FullBath", "HalfBath", "TotRmsAbvGrd", "Fireplaces", 
@@ -91,82 +91,82 @@ object Main {
         Some(true, true)
     )(spark.sqlContext)
 
-		// Let's make a cross validated LinearRegressionModel.
+    // Let's make a cross validated LinearRegressionModel.
 
-		val Array(lrTrain, lrTest) = preprocessedData.randomSplitSync(Array(0.7, 0.3))
+    val Array(lrTrain, lrTest) = preprocessedData.randomSplitSync(Array(0.7, 0.3))
 
-		val lr = new LinearRegression()
-				.setMaxIter(20)
-				.setLabelCol(labelCol)
-				.setFeaturesCol(featuresCol)
-				.setPredictionCol(predictionCol)
+    val lr = new LinearRegression()
+        .setMaxIter(20)
+        .setLabelCol(labelCol)
+        .setFeaturesCol(featuresCol)
+        .setPredictionCol(predictionCol)
 
-		val eval = new RegressionEvaluator()
-				.setLabelCol(labelCol)
-				.setPredictionCol(predictionCol)
+    val eval = new RegressionEvaluator()
+        .setLabelCol(labelCol)
+        .setPredictionCol(predictionCol)
 
-		val paramGrid = new ParamGridBuilder()
-				.addGrid(lr.elasticNetParam, Array(0.1, 0.3, 0.5, 0.7, 0.9))
-				.addGrid(lr.regParam, Array(0.1, 0.3, 0.5, 0.7, 0.9))
-				.build()
+    val paramGrid = new ParamGridBuilder()
+        .addGrid(lr.elasticNetParam, Array(0.1, 0.3, 0.5, 0.7, 0.9))
+        .addGrid(lr.regParam, Array(0.1, 0.3, 0.5, 0.7, 0.9))
+        .build()
 
-		val lrCv = new CrossValidator()
-				.setEstimator(lr)
-				.setEstimatorParamMaps(paramGrid)
-				.setEvaluator(eval)
-				.setNumFolds(3)
+    val lrCv = new CrossValidator()
+        .setEstimator(lr)
+        .setEstimatorParamMaps(paramGrid)
+        .setEvaluator(eval)
+        .setNumFolds(3)
 
-		val lrCvModel = lrCv.fitSync(lrTrain)
-		val lrPredictions = lrCvModel.transformSync(lrTest)
-		println("Evaluation " + eval.evaluate(lrPredictions))
+    val lrCvModel = lrCv.fitSync(lrTrain)
+    val lrPredictions = lrCvModel.transformSync(lrTest)
+    println("Evaluation " + eval.evaluate(lrPredictions))
 
-		// Let's try using a RandomForestRegressor
+    // Let's try using a RandomForestRegressor
 
-		val Array(rfTrain, rfTest) = preprocessedData.randomSplitSync(Array(0.7, 0.3))
+    val Array(rfTrain, rfTest) = preprocessedData.randomSplitSync(Array(0.7, 0.3))
 
-		val rf = new RandomForestRegressor()
-				.setLabelCol(labelCol)
-				.setFeaturesCol(featuresCol)
-				.setPredictionCol(predictionCol)
-				.setNumTrees(200)
+    val rf = new RandomForestRegressor()
+        .setLabelCol(labelCol)
+        .setFeaturesCol(featuresCol)
+        .setPredictionCol(predictionCol)
+        .setNumTrees(200)
 
-		val rfParamGrid = new ParamGridBuilder()
-				.addGrid(rf.featureSubsetStrategy, Array("sqrt", "onethird", "log2"))
-				.addGrid(rf.maxDepth, Array(5, 7))
-				.build()
+    val rfParamGrid = new ParamGridBuilder()
+        .addGrid(rf.featureSubsetStrategy, Array("sqrt", "onethird", "log2"))
+        .addGrid(rf.maxDepth, Array(5, 7))
+        .build()
 
-		val rfCv = new CrossValidator()
-				.setEstimator(rf)
-				.setEvaluator(eval)
-				.setEstimatorParamMaps(rfParamGrid)
-				.setNumFolds(3)
+    val rfCv = new CrossValidator()
+        .setEstimator(rf)
+        .setEvaluator(eval)
+        .setEstimatorParamMaps(rfParamGrid)
+        .setNumFolds(3)
 
-		val rfCvModel = rfCv.fitSync(rfTrain)
-		val rfPredictions = rfCvModel.transformSync(rfTest)
-		println("Evaluation " + eval.evaluate(rfPredictions))
+    val rfCvModel = rfCv.fitSync(rfTrain)
+    val rfPredictions = rfCvModel.transformSync(rfTest)
+    println("Evaluation " + eval.evaluate(rfPredictions))
 
-		// The random forest regressor is slightly better. Let's try gradient boosted trees.
+    // The random forest regressor is slightly better. Let's try gradient boosted trees.
 
-		val Array(gbtTrain, gbtTest) = preprocessedData.randomSplitSync(Array(0.7, 0.3))
+    val Array(gbtTrain, gbtTest) = preprocessedData.randomSplitSync(Array(0.7, 0.3))
 
-		val gbt = new GBTRegressor()
-				.setLabelCol(labelCol)
-				.setFeaturesCol(featuresCol)
-				.setPredictionCol(predictionCol)
-				.setMaxIter(20)
+    val gbt = new GBTRegressor()
+        .setLabelCol(labelCol)
+        .setFeaturesCol(featuresCol)
+        .setPredictionCol(predictionCol)
+        .setMaxIter(20)
 
-		val gbtParamGrid = new ParamGridBuilder()
-				.addGrid(gbt.maxDepth, Array(5, 7))
-				.build()
+    val gbtParamGrid = new ParamGridBuilder()
+        .addGrid(gbt.maxDepth, Array(5, 7))
+        .build()
 
-		val gbtCv = new CrossValidator()
-				.setEstimator(gbt)
-				.setEvaluator(eval)
-				.setEstimatorParamMaps(gbtParamGrid)
-				.setNumFolds(3)
+    val gbtCv = new CrossValidator()
+        .setEstimator(gbt)
+        .setEvaluator(eval)
+        .setEstimatorParamMaps(gbtParamGrid)
+        .setNumFolds(3)
 
-		val gbtCvModel = gbtCv.fitSync(gbtTrain)
-		val gbtPredictions = gbtCvModel.transformSync(gbtTest)
-		println("Evaluation " + eval.evaluate(gbtPredictions))
+    val gbtCvModel = gbtCv.fitSync(gbtTrain)
+    val gbtPredictions = gbtCvModel.transformSync(gbtTest)
+    println("Evaluation " + eval.evaluate(gbtPredictions))
   }
 }

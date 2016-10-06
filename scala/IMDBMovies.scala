@@ -39,177 +39,177 @@ import edu.mit.csail.db.ml.modeldb.client.ModelDbSyncer._
 object Main {
   def run(pathToData: String): Unit = {
     // Create the ModelDBSyncer
-		ModelDbSyncer.setSyncer(
-			new ModelDbSyncer(projectConfig = NewProject(
+    ModelDbSyncer.setSyncer(
+      new ModelDbSyncer(projectConfig = NewProject(
         "IMDB Movies",
-				"hsubrama@mit.edu",
-				"Attempt to predict IMDB scores for movies."
-			))
-		)
+        "hsubrama@mit.edu",
+        "Attempt to predict IMDB scores for movies."
+      ))
+    )
     // Extract the genres from the genre column, which looks like this:
     // genre1|genre2|genre3|...
-		val extractFirstGenre = udf((col: String) => col.split('|')(0))
-		val extractSecondGenre = udf((col: String) => {
-				val items = col.split('|').tail
-				if (items.length == 0)
-						"None"
-				else
-						items(0)
-		})
+    val extractFirstGenre = udf((col: String) => col.split('|')(0))
+    val extractSecondGenre = udf((col: String) => {
+        val items = col.split('|').tail
+        if (items.length == 0)
+            "None"
+        else
+            items(0)
+    })
 
     // Read the data.
-		val df = spark
-				.read
-				.option("header", true)
-				.option("inferSchema", true)
-				.option("ignoreLeadingWhiteSpace", true)
-				.option("ignoreTrainingWhiteSpace", true)
-				.option("nullValue", "None")
-				.csv(pathToData)
-				.withColumn("first_genre", extractFirstGenre($"genres"))
-				.withColumn("second_genre", extractSecondGenre($"genres"))
-				.na.fill(0)
-		df.schema.foreach(field => println(field.dataType + ": " + field.name))
+    val df = spark
+        .read
+        .option("header", true)
+        .option("inferSchema", true)
+        .option("ignoreLeadingWhiteSpace", true)
+        .option("ignoreTrainingWhiteSpace", true)
+        .option("nullValue", "None")
+        .csv(pathToData)
+        .withColumn("first_genre", extractFirstGenre($"genres"))
+        .withColumn("second_genre", extractSecondGenre($"genres"))
+        .na.fill(0)
+    df.schema.foreach(field => println(field.dataType + ": " + field.name))
 
-		// So, we will use the following features in our model.
-		// Color, Number of Critics, Gross, Number of User Reviews, 
+    // So, we will use the following features in our model.
+    // Color, Number of Critics, Gross, Number of User Reviews, 
     // Number of User Votes, Content Rating, Title Year, Country, First Genre, 
     // Second Genre.
-		val categoricalCols: Array[String] = Array(
-				"color",
-				"content_rating",
-				"country",
-				"first_genre",
-				"second_genre"
-		)
-		val scaledCols = Array(
-				"num_critic_for_reviews",
-				"gross",
-				"num_user_for_reviews",
-				"title_year",
-				"num_voted_users"
-		)
+    val categoricalCols: Array[String] = Array(
+        "color",
+        "content_rating",
+        "country",
+        "first_genre",
+        "second_genre"
+    )
+    val scaledCols = Array(
+        "num_critic_for_reviews",
+        "gross",
+        "num_user_for_reviews",
+        "title_year",
+        "num_voted_users"
+    )
 
     // Create the feature vector.
-		val (preprocessedData, featureVectorNames, _) = FeatureVectorizer(
-				df.toDF(),
-				categoricalCols,
-				Array[String](),
-				featuresCol = "features",
-				scaledCols = scaledCols,
-				scaler = Some(true, true)
-		)(spark.sqlContext)
+    val (preprocessedData, featureVectorNames, _) = FeatureVectorizer(
+        df.toDF(),
+        categoricalCols,
+        Array[String](),
+        featuresCol = "features",
+        scaledCols = scaledCols,
+        scaler = Some(true, true)
+    )(spark.sqlContext)
 
     // Create the train and test sets.
     val Array(train, test) = preprocessedData.randomSplitSync(Array(0.7, 0.3))
 
     // Define the columns that the model will use.
-		val labelCol = "imdb_score"
-		val featuresCol = "features"
-		val predictionCol = "prediction"
+    val labelCol = "imdb_score"
+    val featuresCol = "features"
+    val predictionCol = "prediction"
 
     // Create a regression evaluator.
-		def makeEvaluator() = {
-				new RegressionEvaluator()
-						.setLabelCol(labelCol)
-						.setPredictionCol(predictionCol)
-		}
+    def makeEvaluator() = {
+        new RegressionEvaluator()
+            .setLabelCol(labelCol)
+            .setPredictionCol(predictionCol)
+    }
 
     // Function that creates a Linear Regression model, preints out its
     // weights, and returns its predictions on the test set.
-		def makeLrModel(train: DataFrame, 
-										test: DataFrame, 
-										featureVectorNames: Option[Array[String]] = None) = {
-				val lr = new LinearRegression()
-						.setMaxIter(20)
-						.setLabelCol(labelCol)
-						.setFeaturesCol(featuresCol)
-						
-				val eval = makeEvaluator()
-				
-				val paramGrid = new ParamGridBuilder()
-						.addGrid(lr.regParam, Array(0.1, 0.3, 0.5))
-						.addGrid(lr.elasticNetParam, Array(0.1, 0.3, 0.8))
-						.build()
-				 
-				val lrCv = new CrossValidator()
-					.setEstimator(lr)
-					.setEvaluator(eval)
-					.setEstimatorParamMaps(paramGrid)
-					.setNumFolds(3)
-				
-				val lrCvModel = lrCv.fitSync(train)
-				val lrPredictions = lrCvModel.transformSync(test)
-				
+    def makeLrModel(train: DataFrame, 
+                    test: DataFrame, 
+                    featureVectorNames: Option[Array[String]] = None) = {
+        val lr = new LinearRegression()
+            .setMaxIter(20)
+            .setLabelCol(labelCol)
+            .setFeaturesCol(featuresCol)
+            
+        val eval = makeEvaluator()
+        
+        val paramGrid = new ParamGridBuilder()
+            .addGrid(lr.regParam, Array(0.1, 0.3, 0.5))
+            .addGrid(lr.elasticNetParam, Array(0.1, 0.3, 0.8))
+            .build()
+         
+        val lrCv = new CrossValidator()
+          .setEstimator(lr)
+          .setEvaluator(eval)
+          .setEstimatorParamMaps(paramGrid)
+          .setNumFolds(3)
+        
+        val lrCvModel = lrCv.fitSync(train)
+        val lrPredictions = lrCvModel.transformSync(test)
+        
         /*
-				if (featureVectorNames.isDefined)
-						lrCvModel
-								.bestModel
-								.asInstanceOf[LinearRegressionModel]
-								.coefficients
-								.toArray
-								.zip(featureVectorNames.get)
-								.sortWith(_._1.abs > _._1.abs)
-								.foreach{ case (coeff, value) => println(s"$value: $coeff")}
+        if (featureVectorNames.isDefined)
+            lrCvModel
+                .bestModel
+                .asInstanceOf[LinearRegressionModel]
+                .coefficients
+                .toArray
+                .zip(featureVectorNames.get)
+                .sortWith(_._1.abs > _._1.abs)
+                .foreach{ case (coeff, value) => println(s"$value: $coeff")}
         */
-				lrPredictions
-		}
+        lrPredictions
+    }
 
     // Train and evaluate the model.
-		val lrPredictions = makeLrModel(train, test, Some(featureVectorNames)) 
+    val lrPredictions = makeLrModel(train, test, Some(featureVectorNames)) 
     println("Evaluating " + makeEvaluator().evaluate(lrPredictions))
 
-		// Let's try doing the calculation again and try using the languages as a feature.
-		val (preprocessedData2, featureVectorNames2, _) = FeatureVectorizer(
-				df.toDF(),
-				Array(
-						"color",
-						"content_rating",
-						"country",
-						"language",
-						"first_genre",
-						"second_genre"
-				),
-				Array[String](),
-				featuresCol = "features",
-				scaledCols = Array(
-						"num_critic_for_reviews",
-						"gross",
-						"num_user_for_reviews",
-						"title_year",
-						"num_voted_users"
-				),
-				scaler = Some(true, true)
-		)(spark.sqlContext)
-		val Array(train2, test2) = preprocessedData2.randomSplitSync(Array(0.7, 0.3))
+    // Let's try doing the calculation again and try using the languages as a feature.
+    val (preprocessedData2, featureVectorNames2, _) = FeatureVectorizer(
+        df.toDF(),
+        Array(
+            "color",
+            "content_rating",
+            "country",
+            "language",
+            "first_genre",
+            "second_genre"
+        ),
+        Array[String](),
+        featuresCol = "features",
+        scaledCols = Array(
+            "num_critic_for_reviews",
+            "gross",
+            "num_user_for_reviews",
+            "title_year",
+            "num_voted_users"
+        ),
+        scaler = Some(true, true)
+    )(spark.sqlContext)
+    val Array(train2, test2) = preprocessedData2.randomSplitSync(Array(0.7, 0.3))
 
-		val lrPredictions2 = makeLrModel(train2, test2, Some(featureVectorNames2))
-		println("Evaluating " + makeEvaluator().evaluate(lrPredictions2))
+    val lrPredictions2 = makeLrModel(train2, test2, Some(featureVectorNames2))
+    println("Evaluating " + makeEvaluator().evaluate(lrPredictions2))
 
-		// Using the language decreased the RMS error. Now, let's try again and remove the country and language
-		// features.
-		val (preprocessedData3, featureVectorNames3, _) = FeatureVectorizer(
-				df.toDF(),
-				Array(
-						"color",
-						"content_rating",
-						"first_genre",
-						"second_genre"
-				),
-				Array[String](),
-				featuresCol = "features",
-				scaledCols = Array(
-						"num_critic_for_reviews",
-						"gross",
-						"num_user_for_reviews",
-						"title_year",
-						"num_voted_users"
-				),
-				scaler = Some(true, true)
-		)(spark.sqlContext)
-		val Array(train3, test3) = preprocessedData3.randomSplitSync(Array(0.7, 0.3))
+    // Using the language decreased the RMS error. Now, let's try again and remove the country and language
+    // features.
+    val (preprocessedData3, featureVectorNames3, _) = FeatureVectorizer(
+        df.toDF(),
+        Array(
+            "color",
+            "content_rating",
+            "first_genre",
+            "second_genre"
+        ),
+        Array[String](),
+        featuresCol = "features",
+        scaledCols = Array(
+            "num_critic_for_reviews",
+            "gross",
+            "num_user_for_reviews",
+            "title_year",
+            "num_voted_users"
+        ),
+        scaler = Some(true, true)
+    )(spark.sqlContext)
+    val Array(train3, test3) = preprocessedData3.randomSplitSync(Array(0.7, 0.3))
 
-		val lrPredictions3 = makeLrModel(train3, test3, Some(featureVectorNames3))
-		println("Evaluating " + makeEvaluator().evaluate(lrPredictions3))
+    val lrPredictions3 = makeLrModel(train3, test3, Some(featureVectorNames3))
+    println("Evaluating " + makeEvaluator().evaluate(lrPredictions3))
   }
 }

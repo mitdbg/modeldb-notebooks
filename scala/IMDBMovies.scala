@@ -37,7 +37,7 @@ import edu.mit.csail.db.ml.modeldb.client.{ModelDbSyncer, NewProject, SyncableMe
 import edu.mit.csail.db.ml.modeldb.client.ModelDbSyncer._
 
 object Main {
-  def run(pathToData: String): Unit = {
+  def run(pathToData: String): (LinearRegressionModel, LinearRegressionModel, LinearRegressionModel) = {
     // Create the ModelDBSyncer
     ModelDbSyncer.setSyncer(
       new ModelDbSyncer(projectConfig = NewProject(
@@ -152,11 +152,11 @@ object Main {
                 .sortWith(_._1.abs > _._1.abs)
                 .foreach{ case (coeff, value) => println(s"$value: $coeff")}
         */
-        lrPredictions
+        (lrCvModel.bestModel.asInstanceOf[LinearRegressionModel], lrPredictions)
     }
 
     // Train and evaluate the model.
-    val lrPredictions = makeLrModel(train, test, Some(featureVectorNames)) 
+    val (lrModel, lrPredictions) = makeLrModel(train, test, Some(featureVectorNames)) 
     println("Evaluating " + makeEvaluator().evaluate(lrPredictions))
 
     // Let's try doing the calculation again and try using the languages as a feature.
@@ -183,7 +183,7 @@ object Main {
     )(spark.sqlContext)
     val Array(train2, test2) = preprocessedData2.randomSplitSync(Array(0.7, 0.3))
 
-    val lrPredictions2 = makeLrModel(train2, test2, Some(featureVectorNames2))
+    val (lrModel2, lrPredictions2) = makeLrModel(train2, test2, Some(featureVectorNames2))
     println("Evaluating " + makeEvaluator().evaluate(lrPredictions2))
 
     // Using the language decreased the RMS error. Now, let's try again and remove the country and language
@@ -209,7 +209,8 @@ object Main {
     )(spark.sqlContext)
     val Array(train3, test3) = preprocessedData3.randomSplitSync(Array(0.7, 0.3))
 
-    val lrPredictions3 = makeLrModel(train3, test3, Some(featureVectorNames3))
+    val (lrModel3, lrPredictions3) = makeLrModel(train3, test3, Some(featureVectorNames3))
     println("Evaluating " + makeEvaluator().evaluate(lrPredictions3))
+    (lrModel, lrModel2, lrModel3)
   }
 }

@@ -10,7 +10,7 @@
  * The breed and color are less predictive.
  */
 import edu.mit.csail.db.ml.modeldb.util._
-import edu.mit.csail.db.ml.modeldb.client.{ModelDbSyncer, NewProject, SyncableMetrics}
+import edu.mit.csail.db.ml.modeldb.client.{ModelDbSyncer, NewOrExistingProject, DefaultExperiment, NewExperimentRun, SyncableMetrics}
 import edu.mit.csail.db.ml.modeldb.client.ModelDbSyncer._
 import org.apache.spark.sql.functions.udf
 import org.apache.spark.ml.classification.{RandomForestClassificationModel, RandomForestClassifier}
@@ -28,7 +28,9 @@ object Main {
         "Animal Shelter Outcomes",
         "hsubrama@mit.edu",
         "Attempt to predict outcome for cats and dogs in shelters."
-      ))
+      ),
+      experimentConfig = new DefaultExperiment,
+      experimentRunConfig = new NewExperimentRun)
     )
 
     // We'll read the AgeUponOutcome and convert that to the number of years.

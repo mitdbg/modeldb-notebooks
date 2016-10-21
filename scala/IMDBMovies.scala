@@ -33,18 +33,20 @@ import org.apache.spark.ml.tuning.{CrossValidator, ParamGridBuilder}
 import org.apache.spark.ml.evaluation.RegressionEvaluator
 import org.apache.spark.sql.{DataFrame, Dataset, Row}
 import edu.mit.csail.db.ml.modeldb.util._
-import edu.mit.csail.db.ml.modeldb.client.{ModelDbSyncer, NewProject, SyncableMetrics}
+import edu.mit.csail.db.ml.modeldb.client.{ModelDbSyncer, NewOrExistingProject, DefaultExperiment, NewExperimentRun, SyncableMetrics}
 import edu.mit.csail.db.ml.modeldb.client.ModelDbSyncer._
 
 object Main {
   def run(pathToData: String): (LinearRegressionModel, LinearRegressionModel, LinearRegressionModel) = {
     // Create the ModelDBSyncer
     ModelDbSyncer.setSyncer(
-      new ModelDbSyncer(projectConfig = NewProject(
+      new ModelDbSyncer(projectConfig = NewOrExistingProject(
         "IMDB Movies",
         "hsubrama@mit.edu",
         "Attempt to predict IMDB scores for movies."
-      ))
+      ),
+      experimentConfig = new DefaultExperiment,
+      experimentRunConfig = new NewExperimentRun)
     )
     // Extract the genres from the genre column, which looks like this:
     // genre1|genre2|genre3|...

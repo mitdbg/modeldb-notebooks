@@ -9,7 +9,7 @@ import org.apache.spark.sql.types.{IntegerType, StructType, StructField}
 import org.apache.spark.sql.Row
 import scala.util.Try
 import edu.mit.csail.db.ml.modeldb.util._
-import edu.mit.csail.db.ml.modeldb.client.{ModelDbSyncer, NewProject, SyncableMetrics}
+import edu.mit.csail.db.ml.modeldb.client.{ModelDbSyncer, NewOrExistingProject, DefaultExperiment, NewExperimentRun, SyncableMetrics}
 import edu.mit.csail.db.ml.modeldb.client.ModelDbSyncer._
 import org.apache.spark.ml.regression.{LinearRegression}
 import org.apache.spark.ml.tuning.{CrossValidator, ParamGridBuilder}
@@ -24,7 +24,9 @@ object Main {
         "House Prices",
         "hsubrama@mit.edu",
         "Attempt to predict home prices."
-      ))
+      ),
+      experimentConfig = new DefaultExperiment,
+      experimentRunConfig = new NewExperimentRun)
     )
 
     // Read the data.

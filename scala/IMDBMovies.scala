@@ -213,6 +213,37 @@ object Main {
 
     val (lrModel3, lrPredictions3) = makeLrModel(train3, test3, Some(featureVectorNames3))
     println("Evaluating " + makeEvaluator().evaluate(lrPredictions3))
+
+    val syncer = ModelDbSyncer.syncer.get
+    if (syncer.originalFeatures(lrModel).get.length != 10)
+      throw new Exception("First model does not have proper feature count")
+
+    if (syncer.originalFeatures(lrModel2).get.length != 11)
+      throw new Exception("Second model does not have proper feature count")
+
+    if (syncer.originalFeatures(lrModel3).get.length != 9)
+      throw new Exception("Third model does not have proper feature count")
+
+    if (!syncer.modelsDerivedFromDataFrame(train3).get.contains(syncer.id(lrModel3).get))
+      throw new Exception("Could not get models derived from dataframe")
+
+    if (!syncer.modelsWithFeatures("isEnglish").contains(syncer.id(lrModel2).get))
+      throw new Exception("Models with features failed")
+
+    if (!syncer.convergenceTimes(0.4, lrModel, lrModel2, lrModel3).get.contains(2))
+      throw new Exception("Convergence times failed")
+      
+    if (syncer.getCommonAncestor(train3, test3).ancestor.get.id != syncer.id(preprocessedData3).get) 
+      throw new Exception("Common ancestor failed")
+
+    val sizes = syncer.getDatasetSizes(lrModel, lrModel2, lrModel3).get
+    if (sizes(0) != train.count)
+      throw new Exception("First df has wrong number of rows")
+    if (sizes(1) != train2.count)
+      throw new Exception("Second df has wrong number of rows")
+    if (sizes(2) != train3.count)
+      throw new Exception("Third df has wrong number of rows")
+
     (lrModel, lrModel2, lrModel3)
   }
 }

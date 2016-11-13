@@ -20,7 +20,7 @@ import org.apache.spark.ml.regression.RandomForestRegressor
 object Main {
   def run(pathToData: String): Unit = {
     ModelDbSyncer.setSyncer(
-      new ModelDbSyncer(projectConfig = NewProject(
+      new ModelDbSyncer(projectConfig = NewOrExistingProject(
         "House Prices",
         "hsubrama@mit.edu",
         "Attempt to predict home prices."
@@ -120,7 +120,7 @@ object Main {
 
     val lrCvModel = lrCv.fitSync(lrTrain)
     val lrPredictions = lrCvModel.transformSync(lrTest)
-    println("Evaluation " + eval.evaluate(lrPredictions))
+    println("Evaluation " + eval.evaluateSync(lrPredictions, lrCvModel.bestModel))
 
     // Let's try using a RandomForestRegressor
 
@@ -145,7 +145,7 @@ object Main {
 
     val rfCvModel = rfCv.fitSync(rfTrain)
     val rfPredictions = rfCvModel.transformSync(rfTest)
-    println("Evaluation " + eval.evaluate(rfPredictions))
+    println("Evaluation " + eval.evaluateSync(rfPredictions, rfCvModel.bestModel))
 
     // The random forest regressor is slightly better. Let's try gradient boosted trees.
 
@@ -169,6 +169,6 @@ object Main {
 
     val gbtCvModel = gbtCv.fitSync(gbtTrain)
     val gbtPredictions = gbtCvModel.transformSync(gbtTest)
-    println("Evaluation " + eval.evaluate(gbtPredictions))
+    println("Evaluation " + eval.evaluateSync(gbtPredictions, gbtCvModel.bestModel))
   }
 }

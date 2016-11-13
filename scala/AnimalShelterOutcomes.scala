@@ -24,7 +24,7 @@ import org.apache.spark.ml.tuning.{CrossValidator, ParamGridBuilder}
 object Main {
   def run(pathToData: String): Unit = {
     ModelDbSyncer.setSyncer(
-      new ModelDbSyncer(projectConfig = NewProject(
+      new ModelDbSyncer(projectConfig = NewOrExistingProject(
         "Animal Shelter Outcomes",
         "hsubrama@mit.edu",
         "Attempt to predict outcome for cats and dogs in shelters."
@@ -143,7 +143,7 @@ object Main {
     val rfCvModel = rfCv.fitSync(rfTrain)
     val rfPredictions = rfCvModel.transformSync(rfTest)
 
-    println("Evaluation " + eval.evaluate(rfPredictions))
+    println("Evaluation " + eval.evaluateSync(rfPredictions, rfCvModel.bestModel))
 
 
   // Get the confusion matrix.
@@ -200,7 +200,7 @@ object Main {
     val lrCvModel = lrCv.fitSync(lrTrain)
     val lrPredictions = lrCvModel.transformSync(lrTest)
 
-    println("Evaluation " + eval.evaluate(lrPredictions))
+    println("Evaluation " + eval.evaluateSync(lrPredictions, lrCvModel.bestModel))
 
     // Get the confusion matrix.
     println(MakeMulticlassMetrics(lrPredictions, FeatureVectorizer.indexed(labelCol), predictionCol).confusionMatrix)

@@ -159,7 +159,7 @@ object Main {
 
     // Train and evaluate the model.
     val (lrModel, lrPredictions) = makeLrModel(train, test, Some(featureVectorNames)) 
-    println("Evaluating " + makeEvaluator().evaluate(lrPredictions))
+    println("Evaluating " + makeEvaluator().evaluateSync(lrPredictions, lrModel))
 
     // Let's try doing the calculation again and try using the languages as a feature.
     val (preprocessedData2, featureVectorNames2, _) = FeatureVectorizer(
@@ -186,7 +186,7 @@ object Main {
     val Array(train2, test2) = preprocessedData2.randomSplitSync(Array(0.7, 0.3))
 
     val (lrModel2, lrPredictions2) = makeLrModel(train2, test2, Some(featureVectorNames2))
-    println("Evaluating " + makeEvaluator().evaluate(lrPredictions2))
+    println("Evaluating " + makeEvaluator().evaluateSync(lrPredictions2, lrModel2))
 
     // Using the language decreased the RMS error. Now, let's try again and remove the country and language
     // features.
@@ -212,7 +212,7 @@ object Main {
     val Array(train3, test3) = preprocessedData3.randomSplitSync(Array(0.7, 0.3))
 
     val (lrModel3, lrPredictions3) = makeLrModel(train3, test3, Some(featureVectorNames3))
-    println("Evaluating " + makeEvaluator().evaluate(lrPredictions3))
+    println("Evaluating " + makeEvaluator().evaluateSync(lrPredictions3, lrModel3))
 
     val syncer = ModelDbSyncer.syncer.get
     if (syncer.originalFeatures(lrModel).get.length != 10)

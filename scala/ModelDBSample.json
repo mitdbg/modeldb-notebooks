@@ -1,7 +1,7 @@
 {
     "paragraphs": [
         {
-            "text": "%dep\nz.load(\"/Users/harihar/modeldb/client/scala/libs/spark.ml/target/scala-2.11/ml.jar\") ",
+            "text": "%dep\nz.load(\"/home/testuser/modeldb/client/scala/libs/spark.ml/target/scala-2.11/ml.jar\") ",
             "dateUpdated": "2016-11-21T22:44:04-0500",
             "config": {
                 "colWidth": 12,
@@ -98,7 +98,7 @@
             "errorMessage": ""
         },
         {
-            "text": "// This should be the path to the UCI Adult dataset (https://archive.ics.uci.edu/ml/datasets/Adult).\nval pathToDataFile = \"../../adult.data\"",
+            "text": "// This should be the path to the UCI Adult dataset (https://archive.ics.uci.edu/ml/datasets/Adult).\nval pathToDataFile = \"home/testuser/mdbDependencies/adult.data\"",
             "dateUpdated": "2016-11-21T22:44:04-0500",
             "config": {
                 "colWidth": 12,
